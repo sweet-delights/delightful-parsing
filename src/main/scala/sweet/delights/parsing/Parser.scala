@@ -39,130 +39,157 @@ trait Parser[T] {
   */
 object Parser {
 
-  implicit lazy val charParser: Parser[Char] =
-    (ctx: Context) => (ctx.line.charAt(ctx.offset), ctx.incOffset(1))
+  implicit lazy val charParser: Parser[Char] = new Parser[Char] {
+    def parse(ctx: Context): (Char, Context) = (ctx.line.charAt(ctx.offset), ctx.incOffset(1))
+  }
 
-  implicit lazy val stringParser: Parser[String] = (ctx: Context) => {
-    {
-      // @Length
-      for {
-        length <- ctx.getAnnotation[Length]
-        parsed = ctx.line.substring(ctx.offset, ctx.offset + length.value)
-        trimmed = if (ctx.options.trim) parsed.trim else parsed
-      } yield {
-        (trimmed, ctx.incOffset(length.value))
-      }
-    }.orElse {
-        // @LengthParam
+  implicit lazy val stringParser: Parser[String] = new Parser[String] {
+    def parse(ctx: Context): (String, Context) = {
+      {
+        // @Length
         for {
-          lengthParam <- ctx.getAnnotation[LengthParam]
-          length = ctx
-            .getParameter[Int](lengthParam.value)
-            .getOrElse(
-              throw new IllegalArgumentException(s"""Could not find parameter "${lengthParam.value}"""")
-            )
-          parsed = ctx.line.substring(ctx.offset, ctx.offset + length)
+          length <- ctx.getAnnotation[Length]
+          parsed = ctx.line.substring(ctx.offset, ctx.offset + length.value)
           trimmed = if (ctx.options.trim) parsed.trim else parsed
         } yield {
-          (trimmed, ctx.incOffset(length))
+          (trimmed, ctx.incOffset(length.value))
         }
-      }
-      .orElse {
-        // @Regex
-        for {
-          regex <- ctx.getAnnotation[Regex]
-        } yield {
-          val pattern = Pattern.compile(regex.value)
-          val matcher = pattern.matcher(ctx.line)
-
-          if (matcher.find(ctx.offset)) {
-            val start = matcher.start()
-            val end = matcher.`end`()
-            val length = end - start
-            val parsed = ctx.line.substring(start, end)
-            val trimmed = if (ctx.options.trim) parsed.trim else parsed
+      }.orElse {
+          // @LengthParam
+          for {
+            lengthParam <- ctx.getAnnotation[LengthParam]
+            length = ctx
+              .getParameter[Int](lengthParam.value)
+              .getOrElse(
+                throw new IllegalArgumentException(s"""Could not find parameter "${lengthParam.value}"""")
+              )
+            parsed = ctx.line.substring(ctx.offset, ctx.offset + length)
+            trimmed = if (ctx.options.trim) parsed.trim else parsed
+          } yield {
             (trimmed, ctx.incOffset(length))
-          } else {
-            ("", ctx)
           }
         }
-      }
-      .getOrElse {
-        throw new IllegalArgumentException("Could not find any of @Length, @LengthParam or @Regex")
-      }
-  }
+        .orElse {
+          // @Regex
+          for {
+            regex <- ctx.getAnnotation[Regex]
+          } yield {
+            val pattern = Pattern.compile(regex.value)
+            val matcher = pattern.matcher(ctx.line)
 
-  implicit lazy val byteParser: Parser[Byte] = (ctx: Context) => {
-    val (parsed, next) = stringParser.parse(ctx)
-    (parsed.trim.toByte, next)
-  }
-
-  implicit lazy val shortParser: Parser[Short] = (ctx: Context) => {
-    val (parsed, next) = stringParser.parse(ctx)
-    (parsed.trim.toShort, next)
-  }
-
-  implicit lazy val intParser: Parser[Int] = (ctx: Context) => {
-    val (parsed, next) = stringParser.parse(ctx)
-    (parsed.trim.toInt, next)
-  }
-
-  implicit lazy val longParser: Parser[Long] = (ctx: Context) => {
-    val (parsed, next) = stringParser.parse(ctx)
-    (parsed.trim.toLong, next)
-  }
-
-  implicit lazy val floatParser: Parser[Float] = (ctx: Context) => {
-    val (parsed, next) = stringParser.parse(ctx)
-    (parsed.trim.toFloat, next)
-  }
-
-  implicit lazy val doubleParser: Parser[Double] = (ctx: Context) => {
-    val (parsed, next) = stringParser.parse(ctx)
-    (parsed.trim.toDouble, next)
-  }
-
-  implicit lazy val optionStringParser: Parser[Option[String]] = (ctx: Context) => {
-    val (parsed, next) = optionParser[String].parse(ctx)
-    (parsed.filterNot(_.trim.isEmpty), next)
-  }
-
-  implicit def optionParser[T](implicit parser: Parser[T]): Parser[Option[T]] = (ctx: Context) => {
-    val (parsed, next) = parser.parse(ctx)
-    (Option(parsed), next)
-  }
-
-  implicit def listParser[T](implicit parser: Parser[T]): Parser[List[T]] = (ctx: Context) => {
-    val repetition = ctx.getAnnotationOrFail[Repetition]
-    val (parsed, next) = (1 to repetition.value).foldLeft((List.empty[T], ctx)) {
-      case ((list, curr), _) =>
-        val (parsed, next) = parser.parse(curr)
-        (parsed :: list, next)
+            if (matcher.find(ctx.offset)) {
+              val start = matcher.start()
+              val end = matcher.`end`()
+              val length = end - start
+              val parsed = ctx.line.substring(start, end)
+              val trimmed = if (ctx.options.trim) parsed.trim else parsed
+              (trimmed, ctx.incOffset(length))
+            } else {
+              ("", ctx)
+            }
+          }
+        }
+        .getOrElse {
+          throw new IllegalArgumentException("Could not find any of @Length, @LengthParam or @Regex")
+        }
     }
-
-    (parsed.reverse, next)
   }
 
-  implicit val hnilParser: Parser[HNil] = (ctx: Context) => {
-    (HNil, ctx)
+  implicit lazy val byteParser: Parser[Byte] = new Parser[Byte] {
+    def parse(ctx: Context): (Byte, Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      (parsed.trim.toByte, next)
+    }
+  }
+
+  implicit lazy val shortParser: Parser[Short] = new Parser[Short] {
+    def parse(ctx: Context): (Short, Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      (parsed.trim.toShort, next)
+    }
+  }
+
+  implicit lazy val intParser: Parser[Int] = new Parser[Int] {
+    def parse(ctx: Context): (Int, Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      (parsed.trim.toInt, next)
+    }
+  }
+
+  implicit lazy val longParser: Parser[Long] = new Parser[Long] {
+    def parse(ctx: Context): (Long, Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      (parsed.trim.toLong, next)
+    }
+  }
+
+  implicit lazy val floatParser: Parser[Float] = new Parser[Float] {
+    def parse(ctx: Context): (Float, Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      (parsed.trim.toFloat, next)
+    }
+  }
+
+  implicit lazy val doubleParser: Parser[Double] = new Parser[Double] {
+    def parse(ctx: Context): (Double, Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      (parsed.trim.toDouble, next)
+    }
+  }
+
+  implicit lazy val optionStringParser: Parser[Option[String]] = new Parser[Option[String]] {
+    def parse(ctx: Context): (Option[String], Context) = {
+      val (parsed, next) = optionParser[String].parse(ctx)
+      (parsed.filterNot(_.trim.isEmpty), next)
+    }
+  }
+
+  implicit def optionParser[T](implicit parser: Parser[T]): Parser[Option[T]] = new Parser[Option[T]] {
+    def parse(ctx: Context): (Option[T], Context) = {
+      val (parsed, next) = parser.parse(ctx)
+      (Option(parsed), next)
+    }
+  }
+
+  implicit def listParser[T](implicit parser: Parser[T]): Parser[List[T]] = new Parser[List[T]] {
+    def parse(ctx: Context): (List[T], Context) = {
+      val repetition = ctx.getAnnotationOrFail[Repetition]
+      val (parsed, next) = (1 to repetition.value).foldLeft((List.empty[T], ctx)) {
+        case ((list, curr), _) =>
+          val (parsed, next) = parser.parse(curr)
+          (parsed :: list, next)
+      }
+
+      (parsed.reverse, next)
+    }
+  }
+
+  implicit val hnilParser: Parser[HNil] = new Parser[HNil] {
+    def parse(ctx: Context): (HNil, Context) = (HNil, ctx)
   }
   implicit def hlistParser[H, T <: HList](
     implicit
     hser: Lazy[Parser[H]],
     tser: Parser[T]
-  ): Parser[H :: T] = (ctx: Context) => {
-    val (head, after) = hser.value.parse(ctx)
-    val (tail, next) = tser.parse(after)
+  ): Parser[H :: T] = new Parser[H :: T] {
+    def parse(ctx: Context): (H :: T, Context) = {
+      val (head, after) = hser.value.parse(ctx)
+      val (tail, next) = tser.parse(after)
 
-    (head :: tail, next)
+      (head :: tail, next)
+    }
   }
 
-  implicit val cnilParser: Parser[CNil] = (_: Context) => ???
+  implicit val cnilParser: Parser[CNil] = new Parser[CNil] {
+    def parse(ctx: Context): (CNil, Context) = ???
+  }
   implicit def coproductParser[L, R <: Coproduct](
     implicit
     lser: Lazy[Parser[L]],
     rser: Parser[R]
-  ): Parser[L :+: R] = (_: Context) => ???
+  ): Parser[L :+: R] = new Parser[L :+: R] {
+    def parse(ctx: Context): (L :+: R, Context) = ???
+  }
 
   object collector extends Poly1 {
     implicit def annotationsCase[AL <: HList](
@@ -203,16 +230,20 @@ object Parser {
     folder: LeftFolder.Aux[ZL, (HNil, Context), leftFolder.type, Out],
     ev: Out <:< (LL, Context),
     reverse: Reverse.Aux[LL, HL]
-  ): Parser[T] = (ctx: Context) => {
-    val opts = options()
-    val annots = annotations().map(collector) // ML
-    val instance = gen.to(default.get) // HL
-    val zipped = zipper(instance :: annots :: HNil) // ZL = (HL, ML)
-    val (reversed, next) = ev(zipped.foldLeft((HNil: HNil, ctx.withOptions(opts)))(leftFolder)) // Out
-    val result = reversed.reverse // HL
-    val typed = gen.from(result) // T
-    (typed, next)
+  ): Parser[T] = new Parser[T] {
+    def parse(ctx: Context): (T, Context) = {
+      val opts = options()
+      val annots = annotations().map(collector) // ML
+      val instance = gen.to(default.get) // HL
+      val zipped = zipper(instance :: annots :: HNil) // ZL = (HL, ML)
+      val (reversed, next) = ev(zipped.foldLeft((HNil: HNil, ctx.withOptions(opts)))(leftFolder)) // Out
+      val result = reversed.reverse // HL
+      val typed = gen.from(result) // T
+      (typed, next)
+    }
   }
+
+  def apply[T](implicit parser: Parser[T]): Parser[T] = parser
 
   def parse[T](line: String)(implicit parser: Parser[T]): T = parse[T](Map.empty[String, Any])(line)
 
