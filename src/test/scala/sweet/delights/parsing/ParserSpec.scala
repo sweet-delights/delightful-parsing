@@ -15,10 +15,12 @@
 package sweet.delights.parsing
 
 import org.specs2.mutable.Specification
-import sweet.delights.parsing.annotations.{Length, LengthParam, Options, Regex, Repetition}
+import sweet.delights.parsing.annotations.{Conditional, Length, LengthParam, Options, Regex, Repetition}
 import sweet.delights.parsing.Parser._
 
 class ParserSpec extends Specification {
+
+  lazy val cond = (i: Int) => i >= 0
 
   @Options(trim = true)
   case class Foo(
@@ -30,7 +32,7 @@ class ParserSpec extends Specification {
 
   @Options(trim = true)
   case class Bar(
-    list: List[String] @Repetition(2) @Length(5)
+    list: List[String] @Repetition(2) @Length(5) @Conditional(cond)
   )
 
   "Parser" should {
@@ -47,7 +49,8 @@ class ParserSpec extends Specification {
     "parse a line" in {
       val line = "optstrintegerAAAAABBBBBCCCCCDDDDD"
       val parsed = parse[Foo](Map("intSize" -> 7))(line)
-      parsed mustEqual foo
+      parsed must beSome
+      parsed.get mustEqual foo
     }
   }
 }

@@ -27,17 +27,21 @@ import scala.reflect.{classTag, ClassTag}
   * @param annotations list of annotations in context
   * @param parameters list of input parameters
   * @param options optional parsing features
+  * @param idx index if current context inside a lift or option
   */
 case class Context(
   line: String,
   offset: Int,
   annotations: List[StaticAnnotation],
   parameters: Map[String, Any],
-  options: Options
+  options: Options,
+  idx: Int // index if curr context inside a list or option
 ) {
   def incOffset(inc: Int): Context = this.copy(offset = offset + inc)
 
   def withAnnotations(annotations: List[StaticAnnotation]): Context = this.copy(annotations = annotations)
+
+  def withIndex(idx: Int): Context = this.copy(idx = idx)
 
   def withOptions(options: Options): Context = this.copy(options = options)
 
