@@ -69,9 +69,121 @@ println(parsed)
 ## Supported types
 
 By default, [`Parser`](src/main/scala/sweet/delights/parsing/Parser.scala) is able to parse strings and basic types
-such as `Int`, `Double` etc.
+such as `Int`, `Double`, `String`, `Option[T]`, `List[T]` etc.
 
 The support for additional types is done via implentations of [`Parser[T]`](src/main/scala/sweet/delights/parsing/Parser.scala).
+
+## Definitions
+
+### Node
+
+Considering a case class, any field that has a reference to another case classe is a ***node field***.
+
+A ***node type*** is the type of a node field.
+
+### Leaf
+
+Any field that is NOT a node is a ***leaf field***.
+ 
+A ***leaf type*** is the type of a leaf field.
+
+Types `Boolean`, `Byte`, `Short`, `Int`, `Long`, `Float`, `Double` and `String` are leaves.
+
+### Optional and repeatable types
+
+A node or leaf type `T` can be optional (i.e. `Option[T]`) or repeatable (i.e. `List[T]`).
+
+## Annotations
+
+### Why type annotations?
+
+The choice of type annotations (i.e. annotations "*on the right*") rather than variable annotations (i.e. annotations
+"*on the left*") is purely for readability purposes. As such, it is subjective and opiniated.
+
+### `@Options`
+
+Speficies some parsing options like trimming what is consumed. For now, this annotation is mandantory for nodes (case classes).
+Example:
+```scala
+import sweet.delights.parsing.annotations.Options
+
+@Options(trim = true)
+case class Foo()
+```
+
+### `@Length(Int)`
+
+Specifies the number of characters to be consumed explicitly. Applicable only to leaf types. Example:
+```scala
+import sweet.delights.parsing.annotations.{Length, Options}
+
+@Options(trim = true)
+case class Foo(
+  str: String @Length(5),
+  opt: Option[String] @Length(2)
+)
+```
+
+The field `str` consumes 5 characters from the input string. As the trimming option is activated, the final length of
+`str` may be less than 5.
+
+The field `opt` consumes 2 characters. In addition to the behavior above, as this is an optional field, if the trimmed
+string is empty, then `opt` becomes `None`.
+
+### `@LengthParam(String)`
+
+Specifies the length of characters to be consumed via a parameter to be provided when calling `Parser.parser[T]`. Applicable
+to leaf types only. Example:
+```scala
+import sweet.delights.parsing.annotations.{LengthParam, Options}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  str: String @LengthParam("myStrSize")
+)
+
+val line = "ABCDE"
+Parser.parse[Foo](Map("myStrSize" -> 5))(line)
+```
+
+### `@Regex(String)`
+
+Specifies characters to be consumed thanks to a regular expression. Applicable of leaf types only. Example:
+```scala
+import sweet.delights.parsing.annotations.{Regex, Options}
+
+@Options(trim = true)
+case class Foo(
+  str: String @Regex("""\w{5}""")
+)
+```
+
+### `@Repetition(Int)`
+
+Specifies the number of repetitions for a list. Example:
+```scala
+import sweet.delights.parsing.annotations.{Length, Repetition, Options}
+
+@Options(trim = true)
+case class Foo(
+  strs: List[String] @Repetition(2) @Length(5),
+  bars: List[Bar]    @Repetition(3)
+)
+
+@Options(trim = true)
+case class Bar(
+  list: String @Length(1)
+)
+```
+
+`strs` is a repeatable leaf field. As such, is requires `@Length` in addition to `@Repetition`.
+
+`bars` is a repeatable node field. Only `@Repetition` is required.
+
+### `@Conditional`
+
+Experimental. TODO.
 
 ## Limitations
 
