@@ -185,6 +185,10 @@ case class Bar(
 
 Experimental. TODO.
 
+### `@TrailingSkip`
+
+TODO
+
 ## Limitations
 
 - case classes MUST be decorated with the [`Options`](src/main/scala/sweet/delights/parsing/annotations/Options.scala) annotation

@@ -18,7 +18,7 @@ import java.util.regex.Pattern
 
 import shapeless.{:+:, ::, Annotation, CNil, Coproduct, Generic, HList, HNil, Lazy, Poly1, Poly2}
 import shapeless.ops.hlist.{LeftFolder, Mapper, Reverse, RightFolder, Zip}
-import sweet.delights.parsing.annotations.{Conditional, Length, LengthParam, Options, Regex, Repetition}
+import sweet.delights.parsing.annotations.{Conditional, Length, LengthParam, Options, Regex, Repetition, TrailingSkip}
 import sweet.delights.typeclass.Default
 
 import scala.annotation.StaticAnnotation
@@ -98,6 +98,13 @@ object Parser {
           case (some, next) =>
             ctx.getAnnotation[Conditional] match {
               case Some(cond) => if (cond.func(ctx.idx)) (some, next) else (None, ctx)
+              case None => (some, next)
+            }
+        }
+        .map {
+          case (some, next) =>
+            ctx.getAnnotation[TrailingSkip] match {
+              case Some(skip) => (some, next.incOffset(skip.value))
               case None => (some, next)
             }
         }
@@ -214,6 +221,7 @@ object Parser {
     implicit val caseLengthParam: Case.Aux[LengthParam, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseRegex: Case.Aux[Regex, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseRepetition: Case.Aux[Repetition, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
+    implicit val caseTrailingSkip: Case.Aux[TrailingSkip, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseAnnotations: Case.Aux[List[StaticAnnotation], List[List[StaticAnnotation]], List[List[StaticAnnotation]]] = at((c, acc) => c :: acc)
   }
 
