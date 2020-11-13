@@ -17,8 +17,8 @@ package sweet.delights.parsing
 import java.util.regex.Pattern
 
 import shapeless.{:+:, ::, Annotation, CNil, Coproduct, Generic, HList, HNil, Lazy, Poly1, Poly2}
-import shapeless.ops.hlist.{LeftFolder, Mapper, Reverse, RightFolder, Zip}
-import sweet.delights.parsing.annotations.{Conditional, Length, LengthParam, Options, Regex, Repetition, TrailingSkip}
+import shapeless.ops.hlist.{LeftFolder, Mapper, Reverse, ToTraversable, Zip}
+import sweet.delights.parsing.annotations.{Conditional, Debug, Length, LengthParam, Options, Regex, Repetition, TrailingSkip}
 import sweet.delights.typeclass.Default
 
 import scala.annotation.StaticAnnotation
@@ -108,6 +108,17 @@ object Parser {
               case None => (some, next)
             }
         }
+        .map {
+          case (some, next) =>
+            ctx.getAnnotation[Debug] match {
+              case Some(debug) =>
+                println(
+                  s"ctx: idx = ${ctx.idx}, offset = ${ctx.offset}, params = ${ctx.parameters}, options = ${ctx.options}, annotations = ${ctx.annotations}"
+                )
+                (some, next)
+              case None => (some, next)
+            }
+        }
         .getOrElse {
           throw new IllegalArgumentException("Could not find any of @Length, @LengthParam or @Regex")
         }
@@ -165,8 +176,8 @@ object Parser {
 
   implicit def optionParser[T](implicit parser: Parser[T]): Parser[Option[T]] = new Parser[Option[T]] {
     def parse(ctx: Context): (Option[Option[T]], Context) = {
-      val (parsed, next) = parser.parse(ctx.withIndex(0))
-      (Option(parsed).filterNot(_.isEmpty), next.withIndex(-1))
+      val (parsed, next) = parser.parse(ctx)
+      (Option(parsed).filterNot(_.isEmpty), next)
     }
   }
 
@@ -209,9 +220,9 @@ object Parser {
 
   object collector extends Poly1 {
     implicit def annotationsCase[AL <: HList](
-      implicit folder: RightFolder.Aux[AL, List[StaticAnnotation], rightFold.type, List[StaticAnnotation]]
+      implicit toTraversable: ToTraversable.Aux[AL, List, StaticAnnotation]
     ): Case.Aux[AL, List[StaticAnnotation]] = at { annotations =>
-      annotations.foldRight(List.empty[StaticAnnotation])(rightFold)
+      annotations.toList[StaticAnnotation]
     }
   }
 
@@ -235,12 +246,22 @@ object Parser {
     }
   }
 
+  object rightFolder extends Poly2 {
+    implicit def caseAt[F, HL <: HList](
+      implicit parser: Parser[F]
+    ): Case.Aux[(F, List[StaticAnnotation]), (HL, Context), (F :: HL, Context)] = at {
+      case ((default, annotations), (acc, ctx)) =>
+        val (parsed, next) = parser.parse(ctx.withAnnotations(annotations))
+        (parsed.getOrElse(default) :: acc, next)
+    }
+  }
+
   // putting everything together
   implicit def genericParser[T, HL <: HList, AL <: HList, ML <: HList, ZL <: HList, Out, LL <: HList](
     implicit
-    default: Default[T],
     gen: Generic.Aux[T, HL],
     parser: Lazy[Parser[HL]],
+    default: Lazy[Default[HL]],
     options: Annotation[Options, T],
     annotations: AllTypeAnnotations.Aux[T, AL],
     mapper: Mapper.Aux[collector.type, AL, ML],
@@ -252,7 +273,7 @@ object Parser {
     def parse(ctx: Context): (Option[T], Context) = {
       val opts = options()
       val annots = annotations().map(collector) // ML
-      val instance = gen.to(default.get) // HL
+      val instance = default.value.get // HL
       val zipped = zipper(instance :: annots :: HNil) // ZL = (HL, ML)
       val (reversed, next) = ev(zipped.foldLeft((HNil: HNil, ctx.withOptions(opts)))(leftFolder)) // Out
       val result = reversed.reverse // HL
