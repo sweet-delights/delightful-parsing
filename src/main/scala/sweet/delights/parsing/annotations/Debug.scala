@@ -17,9 +17,10 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies the number of characters to skip after a
-  * successful string parsing.
+  * Makes debugging information to be printed to stdout.
+  * The provided free text is also printed out in order to
+  * identify the particular field parsing being debugged.
   *
-  * @param value number of characters
+  * @param value a free text
   */
-case class TrailingSkip(value: Int) extends StaticAnnotation
+case class Debug(value: String) extends StaticAnnotation
