@@ -181,13 +181,50 @@ case class Bar(
 
 `bars` is a repeatable node field. Only `@Repetition` is required.
 
-### `@Conditional`
+### `@Conditional(Int => Boolean)`
 
 Experimental. TODO.
 
-### `@TrailingSkip`
+### `@TrailingSkip(Int)`
 
-TODO
+Specifies a number of characters to be skipped after a field is parsed successfully. Example:
+```scala
+import sweet.delights.parsing.annotations.{Length, Options, TrailingSkip}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  str1: String @Length(1),
+  str2: String @Length(1) @TrailingSkip(1),
+  str3: String @Length(1)
+)
+
+Parser.parse[Foo]("AB C")
+// res0: Foo(
+//   str1 = "AA",
+//   str2 = "BB",
+//   str3 = "CC"
+// )
+```
+
+### `@Debug(String)`
+
+Makes `Parser` to print debugging information to stdout, after a successful parsing. Example:
+```scala
+import sweet.delights.parsing.annotations.{Debug, Length, Options}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  str: String @Length(1) @Debug("Hello World!")
+)
+
+Parser.parse[Foo]("A")
+// ctx: idx = -1, offset = 1, params = Map(), options = Options(true), annotations = List(Length(1), Debug(Hello World!))
+// res0: Foo(
+//   str = "A"
+// )
+```
 
 ## Limitations
 
