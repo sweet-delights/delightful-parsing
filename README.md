@@ -10,7 +10,7 @@ This library is built for Scala 2.11.12, 2.12.12 and 2.13.3
 
 ### SBT
 ```scala
-libraryDependencies += "org.sweet-delights" %% "delightful-parsing" % "0.2.0"
+libraryDependencies += "org.sweet-delights" %% "delightful-parsing" % "0.3.0"
 ```
 
 ### Maven
@@ -18,7 +18,7 @@ libraryDependencies += "org.sweet-delights" %% "delightful-parsing" % "0.2.0"
 <dependency>
   <groupId>org.sweet-delights</groupId>
   <artifactId>delightful-parsing_2.12</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
 </dependency>
 ```
 
