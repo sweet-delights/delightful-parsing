@@ -14,11 +14,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package sweet.delights.parsing
 
+import java.time.{LocalDate, LocalDateTime, LocalTime, ZoneId, ZoneOffset, ZonedDateTime}
+import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
 import shapeless.{:+:, ::, Annotation, CNil, Coproduct, Generic, HList, HNil, Lazy, Poly1, Poly2}
 import shapeless.ops.hlist.{LeftFolder, Mapper, Reverse, ToTraversable, Zip}
-import sweet.delights.parsing.annotations.{Conditional, Debug, Length, LengthParam, Options, Regex, Repetition, TrailingSkip}
+import sweet.delights.parsing.annotations.{Conditional, Debug, Format, FormatParam, Length, LengthParam, Options, Regex, Repetition, TrailingSkip}
 import sweet.delights.typeclass.Default
 
 import scala.annotation.StaticAnnotation
@@ -164,6 +166,96 @@ object Parser {
     def parse(ctx: Context): (Option[Double], Context) = {
       val (parsed, next) = stringParser.parse(ctx)
       (parsed.map(_.trim.toDouble), next)
+    }
+  }
+
+  implicit lazy val localDateParser: Parser[LocalDate] = new Parser[LocalDate] {
+    def parse(ctx: Context): (Option[LocalDate], Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      val format = next
+        .getAnnotation[Format]
+        .map(_.value)
+        .orElse(next.getAnnotation[FormatParam].map(_.value).map(next.getParameterOrFail[String]))
+      val formatted = for {
+        str <- parsed
+        fmt <- format
+      } yield {
+        val formatter = DateTimeFormatter.ofPattern(fmt) // TODO cache formatters?
+        LocalDate.parse(str, formatter)
+      }
+
+      (formatted.orElse(parsed.map(LocalDate.parse)), next)
+    }
+  }
+
+  implicit lazy val localTimeParser: Parser[LocalTime] = new Parser[LocalTime] {
+    def parse(ctx: Context): (Option[LocalTime], Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      val format = next
+        .getAnnotation[Format]
+        .map(_.value)
+        .orElse(next.getAnnotation[FormatParam].map(_.value).map(next.getParameterOrFail[String]))
+      val formatted = for {
+        str <- parsed
+        fmt <- format
+      } yield {
+        val formatter = DateTimeFormatter.ofPattern(fmt) // TODO cache formatters?
+        LocalTime.parse(str, formatter)
+      }
+
+      (formatted.orElse(parsed.map(LocalTime.parse)), next)
+    }
+  }
+
+  implicit lazy val localDateTimeParser: Parser[LocalDateTime] = new Parser[LocalDateTime] {
+    def parse(ctx: Context): (Option[LocalDateTime], Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      val format = next
+        .getAnnotation[Format]
+        .map(_.value)
+        .orElse(next.getAnnotation[FormatParam].map(_.value).map(next.getParameterOrFail[String]))
+      val formatted = for {
+        str <- parsed
+        fmt <- format
+      } yield {
+        val formatter = DateTimeFormatter.ofPattern(fmt) // TODO cache formatters?
+        LocalDateTime.parse(str, formatter)
+      }
+
+      (formatted.orElse(parsed.map(LocalDateTime.parse)), next)
+    }
+  }
+
+  implicit lazy val zoneOffsetParser: Parser[ZoneOffset] = new Parser[ZoneOffset] {
+    def parse(ctx: Context): (Option[ZoneOffset], Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      (parsed.map(ZoneOffset.of), next)
+    }
+  }
+
+  implicit lazy val zoneIdParser: Parser[ZoneId] = new Parser[ZoneId] {
+    def parse(ctx: Context): (Option[ZoneId], Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      (parsed.map(ZoneId.of), next)
+    }
+  }
+
+  implicit lazy val zonedDateTimeParser: Parser[ZonedDateTime] = new Parser[ZonedDateTime] {
+    def parse(ctx: Context): (Option[ZonedDateTime], Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      val format = next
+        .getAnnotation[Format]
+        .map(_.value)
+        .orElse(next.getAnnotation[FormatParam].map(_.value).map(next.getParameterOrFail[String]))
+      val formatted = for {
+        str <- parsed
+        fmt <- format
+      } yield {
+        val formatter = DateTimeFormatter.ofPattern(fmt) // TODO cache formatters?
+        ZonedDateTime.parse(str, formatter)
+      }
+
+      (formatted.orElse(parsed.map(ZonedDateTime.parse)), next)
     }
   }
 

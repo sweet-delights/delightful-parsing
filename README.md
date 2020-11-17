@@ -207,6 +207,47 @@ Parser.parse[Foo]("AB C")
 // )
 ```
 
+### `@Format(String)`
+
+Specifies a format to parse a certain leaf type. For now, leaf types supported are `java.time.{LocalDate, LocalTime, LocalDateTime,
+ZonedDateTime}`. Example:
+
+```scala
+import java.time.LocalDate
+import sweet.delights.parsing.annotations.{Length, Options, Format}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  date: LocalDate @Length(6) @Format("yyMMdd")
+)
+
+Parser.parse[Foo]("200101")
+// res0: Foo(
+//   date = LocalDate.of(2020, 1, 1)
+// )
+```
+
+### `@FormatParam(String)`
+
+Same as `@Format(String)`, except the format value is to be provided as a parameter. Example:
+
+```scala
+import java.time.LocalDate
+import sweet.delights.parsing.annotations.{Length, Options, FormatParam}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  date: LocalDate @Length(6) @FormatParam("dateFormat")
+)
+
+Parser.parse[Foo](Map("dateFormat" -> "yyMMdd"))("200101")
+// res0: Foo(
+//   date = LocalDate.of(2020, 1, 1)
+// )
+```
+
 ### `@Debug(String)`
 
 Makes `Parser` to print debugging information to stdout, after a successful parsing. Example:

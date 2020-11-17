@@ -14,8 +14,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package sweet.delights.parsing
 
+import java.time.LocalDate
+
 import org.specs2.mutable.Specification
-import sweet.delights.parsing.annotations.{Conditional, Length, LengthParam, Options, Regex, Repetition, TrailingSkip}
+import sweet.delights.parsing.annotations.{Conditional, Format, Length, LengthParam, Options, Regex, Repetition, TrailingSkip}
 import sweet.delights.parsing.Parser._
 
 class ParserSpec extends Specification {
@@ -27,7 +29,8 @@ class ParserSpec extends Specification {
     opt: Option[String] @Length(3),
     str: String         @Regex("""\w{3}""") @TrailingSkip(1),
     integer: String     @LengthParam("intSize"),
-    more: List[Bar]     @Repetition(2)
+    more: List[Bar]     @Repetition(2),
+    date: LocalDate     @Length(6) @Format("yyMMdd")
   )
 
   @Options(trim = true)
@@ -40,14 +43,15 @@ class ParserSpec extends Specification {
       opt = Some("opt"),
       str = "str",
       integer = "integer",
-      List(
+      more = List(
         Bar(List("AAAAA", "BBBBB")),
         Bar(List("CCCCC", "DDDDD"))
-      )
+      ),
+      date = LocalDate.of(2020, 1, 1)
     )
 
     "parse a line" in {
-      val line = "optstr_integerAAAAABBBBBCCCCCDDDDD"
+      val line = "optstr_integerAAAAABBBBBCCCCCDDDDD200101"
       val parsed = parse[Foo](Map("intSize" -> 7))(line)
       parsed must beSome
       parsed.get mustEqual foo
