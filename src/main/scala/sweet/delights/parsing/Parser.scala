@@ -14,16 +14,32 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package sweet.delights.parsing
 
-import java.time.{LocalDate, LocalDateTime, LocalTime, ZoneId, ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeFormatter
+import java.time.{
+  Duration,
+  Instant,
+  LocalDate,
+  LocalDateTime,
+  LocalTime,
+  MonthDay,
+  OffsetDateTime,
+  OffsetTime,
+  Period,
+  Year,
+  YearMonth,
+  ZoneId,
+  ZoneOffset,
+  ZonedDateTime
+}
 import java.util.regex.Pattern
 
-import shapeless.{:+:, ::, Annotation, CNil, Coproduct, Generic, HList, HNil, Lazy, Poly1, Poly2}
 import shapeless.ops.hlist.{LeftFolder, Mapper, Reverse, ToTraversable, Zip}
-import sweet.delights.parsing.annotations.{Conditional, Debug, Format, FormatParam, Length, LengthParam, Options, Regex, Repetition, TrailingSkip}
+import shapeless.{:+:, ::, Annotation, CNil, Coproduct, Generic, HList, HNil, Lazy, Poly1, Poly2}
+import sweet.delights.parsing.annotations.{Conditional, Format, FormatParam, Length, LengthParam, Lenient, Options, Regex, Repetition, TrailingSkip, TrueIf}
 import sweet.delights.typeclass.Default
 
 import scala.annotation.StaticAnnotation
+import scala.util.Try
 
 /**
   * Parser is a typeclass that parses a line containing fixed-width columns.
@@ -92,9 +108,9 @@ object Parser {
           }
         }
 
-      opt
+      val res = opt
         .map {
-          case (some, next) => if (ctx.options.trim) (some.map(_.trim), next) else (some, next)
+          case (some, next) => if (ctx.options.trim) (some.map(_.trim).filterNot(_.isEmpty), next) else (some, next)
         }
         .map {
           case (some, next) =>
@@ -110,152 +126,128 @@ object Parser {
               case None => (some, next)
             }
         }
-        .map {
-          case (some, next) =>
-            ctx.getAnnotation[Debug] match {
-              case Some(debug) =>
-                println(
-                  s"ctx: idx = ${ctx.idx}, offset = ${ctx.offset}, params = ${ctx.parameters}, options = ${ctx.options}, annotations = ${ctx.annotations}"
-                )
-                (some, next)
-              case None => (some, next)
-            }
-        }
-        .getOrElse {
-          throw new IllegalArgumentException("Could not find any of @Length, @LengthParam or @Regex")
-        }
+
+      if (ctx.options.debug) res.foreach {
+        case (some, next) =>
+          println(
+            s"ctx: idx = ${ctx.idx}, offset = ${ctx.offset}, length = ${next.offset - ctx.offset}, res = ${some}, params = ${ctx.parameters}, options = ${ctx.options}, annotations = ${ctx.annotations}"
+          )
+      }
+
+      res.getOrElse {
+        throw new IllegalArgumentException("Could not find any of @Length, @LengthParam or @Regex")
+      }
+    }
+  }
+
+  implicit lazy val booleanParser: Parser[Boolean] = new Parser[Boolean] {
+    def parse(ctx: Context): (Option[Boolean], Context) = {
+      val (parsed, next) = stringParser.parse(ctx)
+      val eval = for {
+        truth <- next.getAnnotation[TrueIf]
+        str <- parsed
+      } yield str == truth.value
+
+      val res = eval.orElse(parseLeaf(parsed, ctx)(_.toBoolean))
+      (res, next)
     }
   }
 
   implicit lazy val byteParser: Parser[Byte] = new Parser[Byte] {
-    def parse(ctx: Context): (Option[Byte], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      (parsed.map(_.trim.toByte), next)
-    }
+    def parse(ctx: Context): (Option[Byte], Context) = parseLeaf(ctx)(_.toByte)
   }
 
   implicit lazy val shortParser: Parser[Short] = new Parser[Short] {
-    def parse(ctx: Context): (Option[Short], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      (parsed.map(_.trim.toShort), next)
-    }
+    def parse(ctx: Context): (Option[Short], Context) = parseLeaf(ctx)(_.toShort)
   }
 
   implicit lazy val intParser: Parser[Int] = new Parser[Int] {
-    def parse(ctx: Context): (Option[Int], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      (parsed.map(_.trim.toInt), next)
-    }
+    def parse(ctx: Context): (Option[Int], Context) = parseLeaf(ctx)(_.toInt)
   }
 
   implicit lazy val longParser: Parser[Long] = new Parser[Long] {
-    def parse(ctx: Context): (Option[Long], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      (parsed.map(_.trim.toLong), next)
-    }
+    def parse(ctx: Context): (Option[Long], Context) = parseLeaf(ctx)(_.toLong)
   }
 
   implicit lazy val floatParser: Parser[Float] = new Parser[Float] {
-    def parse(ctx: Context): (Option[Float], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      (parsed.map(_.trim.toFloat), next)
-    }
+    def parse(ctx: Context): (Option[Float], Context) = parseLeaf(ctx)(_.toFloat)
   }
 
   implicit lazy val doubleParser: Parser[Double] = new Parser[Double] {
-    def parse(ctx: Context): (Option[Double], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      (parsed.map(_.trim.toDouble), next)
-    }
+    def parse(ctx: Context): (Option[Double], Context) = parseLeaf(ctx)(_.toDouble)
+  }
+
+  implicit lazy val durationParser: Parser[Duration] = new Parser[Duration] {
+    def parse(ctx: Context): (Option[Duration], Context) = parseLeaf(ctx)(Duration.parse)
+  }
+
+  implicit lazy val instantParser: Parser[Instant] = new Parser[Instant] {
+    def parse(ctx: Context): (Option[Instant], Context) = parseLeaf(ctx)(Instant.parse)
   }
 
   implicit lazy val localDateParser: Parser[LocalDate] = new Parser[LocalDate] {
     def parse(ctx: Context): (Option[LocalDate], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      val format = next
-        .getAnnotation[Format]
-        .map(_.value)
-        .orElse(next.getAnnotation[FormatParam].map(_.value).map(next.getParameterOrFail[String]))
-      val formatted = for {
-        str <- parsed
-        fmt <- format
-      } yield {
-        val formatter = DateTimeFormatter.ofPattern(fmt) // TODO cache formatters?
-        LocalDate.parse(str, formatter)
-      }
-
-      (formatted.orElse(parsed.map(LocalDate.parse)), next)
+      parseJavaTime(ctx)(LocalDate.parse(_), LocalDate.parse(_, _))
     }
   }
 
   implicit lazy val localTimeParser: Parser[LocalTime] = new Parser[LocalTime] {
     def parse(ctx: Context): (Option[LocalTime], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      val format = next
-        .getAnnotation[Format]
-        .map(_.value)
-        .orElse(next.getAnnotation[FormatParam].map(_.value).map(next.getParameterOrFail[String]))
-      val formatted = for {
-        str <- parsed
-        fmt <- format
-      } yield {
-        val formatter = DateTimeFormatter.ofPattern(fmt) // TODO cache formatters?
-        LocalTime.parse(str, formatter)
-      }
-
-      (formatted.orElse(parsed.map(LocalTime.parse)), next)
+      parseJavaTime(ctx)(LocalTime.parse(_), LocalTime.parse(_, _))
     }
   }
 
   implicit lazy val localDateTimeParser: Parser[LocalDateTime] = new Parser[LocalDateTime] {
     def parse(ctx: Context): (Option[LocalDateTime], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      val format = next
-        .getAnnotation[Format]
-        .map(_.value)
-        .orElse(next.getAnnotation[FormatParam].map(_.value).map(next.getParameterOrFail[String]))
-      val formatted = for {
-        str <- parsed
-        fmt <- format
-      } yield {
-        val formatter = DateTimeFormatter.ofPattern(fmt) // TODO cache formatters?
-        LocalDateTime.parse(str, formatter)
-      }
+      parseJavaTime(ctx)(LocalDateTime.parse(_), LocalDateTime.parse(_, _))
+    }
+  }
 
-      (formatted.orElse(parsed.map(LocalDateTime.parse)), next)
+  implicit lazy val monthDayParser: Parser[MonthDay] = new Parser[MonthDay] {
+    def parse(ctx: Context): (Option[MonthDay], Context) = {
+      parseJavaTime(ctx)(MonthDay.parse(_), MonthDay.parse(_, _))
     }
   }
 
   implicit lazy val zoneOffsetParser: Parser[ZoneOffset] = new Parser[ZoneOffset] {
-    def parse(ctx: Context): (Option[ZoneOffset], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      (parsed.map(ZoneOffset.of), next)
-    }
+    def parse(ctx: Context): (Option[ZoneOffset], Context) = parseLeaf(ctx)(ZoneOffset.of)
   }
 
   implicit lazy val zoneIdParser: Parser[ZoneId] = new Parser[ZoneId] {
-    def parse(ctx: Context): (Option[ZoneId], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      (parsed.map(ZoneId.of), next)
+    def parse(ctx: Context): (Option[ZoneId], Context) = parseLeaf(ctx)(ZoneId.of)
+  }
+
+  implicit lazy val offsetDateTimeParser: Parser[OffsetDateTime] = new Parser[OffsetDateTime] {
+    def parse(ctx: Context): (Option[OffsetDateTime], Context) = {
+      parseJavaTime(ctx)(OffsetDateTime.parse(_), OffsetDateTime.parse(_, _))
+    }
+  }
+
+  implicit lazy val offsetTimeParser: Parser[OffsetTime] = new Parser[OffsetTime] {
+    def parse(ctx: Context): (Option[OffsetTime], Context) = {
+      parseJavaTime(ctx)(OffsetTime.parse(_), OffsetTime.parse(_, _))
+    }
+  }
+
+  implicit lazy val periodParser: Parser[Period] = new Parser[Period] {
+    def parse(ctx: Context): (Option[Period], Context) = parseLeaf(ctx)(Period.parse)
+  }
+
+  implicit lazy val yearParser: Parser[Year] = new Parser[Year] {
+    def parse(ctx: Context): (Option[Year], Context) = {
+      parseJavaTime(ctx)(Year.parse(_), Year.parse(_, _))
+    }
+  }
+
+  implicit lazy val yearMonthParser: Parser[YearMonth] = new Parser[YearMonth] {
+    def parse(ctx: Context): (Option[YearMonth], Context) = {
+      parseJavaTime(ctx)(YearMonth.parse(_), YearMonth.parse(_, _))
     }
   }
 
   implicit lazy val zonedDateTimeParser: Parser[ZonedDateTime] = new Parser[ZonedDateTime] {
     def parse(ctx: Context): (Option[ZonedDateTime], Context) = {
-      val (parsed, next) = stringParser.parse(ctx)
-      val format = next
-        .getAnnotation[Format]
-        .map(_.value)
-        .orElse(next.getAnnotation[FormatParam].map(_.value).map(next.getParameterOrFail[String]))
-      val formatted = for {
-        str <- parsed
-        fmt <- format
-      } yield {
-        val formatter = DateTimeFormatter.ofPattern(fmt) // TODO cache formatters?
-        ZonedDateTime.parse(str, formatter)
-      }
-
-      (formatted.orElse(parsed.map(ZonedDateTime.parse)), next)
+      parseJavaTime(ctx)(ZonedDateTime.parse(_), ZonedDateTime.parse(_, _))
     }
   }
 
@@ -320,11 +312,15 @@ object Parser {
 
   object rightFold extends Poly2 {
     implicit val caseConditional: Case.Aux[Conditional, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
+    implicit val caseFormat: Case.Aux[Format, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
+    implicit val caseFormatParam: Case.Aux[FormatParam, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseLength: Case.Aux[Length, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseLengthParam: Case.Aux[LengthParam, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
+    implicit val caseLenient: Case.Aux[Lenient, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseRegex: Case.Aux[Regex, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseRepetition: Case.Aux[Repetition, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseTrailingSkip: Case.Aux[TrailingSkip, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
+    implicit val caseTrueIf: Case.Aux[TrueIf, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseAnnotations: Case.Aux[List[StaticAnnotation], List[List[StaticAnnotation]], List[List[StaticAnnotation]]] = at((c, acc) => c :: acc)
   }
 
@@ -374,12 +370,44 @@ object Parser {
     }
   }
 
+  private def parseJavaTime[T](ctx: Context)(
+    parse: String => T,
+    parseFormat: (String, DateTimeFormatter) => T
+  ): (Option[T], Context) = {
+    val (parsed, next) = stringParser.parse(ctx)
+    val format = next
+      .getAnnotation[Format]
+      .map(_.value)
+      .orElse(next.getAnnotation[FormatParam].map(_.value).map(next.getParameterOrFail[String]))
+
+    format match {
+      case Some(fmt) =>
+        val formatter = DateTimeFormatter.ofPattern(fmt)
+        (parseLeaf(parsed, ctx)(parseFormat(_, formatter)), next)
+
+      case None =>
+        (parseLeaf(parsed, ctx)(parse), next)
+    }
+  }
+
+  private def parseLeaf[T](ctx: Context)(parse: String => T): (Option[T], Context) = {
+    val (parsed, next) = stringParser.parse(ctx)
+    (parseLeaf[T](parsed, next)(parse), next)
+  }
+
+  private def parseLeaf[T](opt: Option[String], ctx: Context)(parse: String => T): Option[T] = {
+    val lenient = ctx.getAnnotation[Lenient].isDefined
+    if (lenient) opt.flatMap(str => Try(parse(str)).toOption)
+    else opt.map(parse)
+  }
+
   def apply[T](implicit parser: Parser[T]): Parser[T] = parser
 
   def parse[T](line: String)(implicit parser: Parser[T]): Option[T] = parse[T](Map.empty[String, Any])(line)
 
   def parse[T](params: Map[String, Any])(line: String)(implicit parser: Parser[T]): Option[T] = {
-    val ctx = Context(line, 0, Nil, params, Options(false), -1)
+    val ctx = Context(line, 0, Nil, params, Options(false, false), -1)
     parser.parse(ctx)._1
   }
+
 }

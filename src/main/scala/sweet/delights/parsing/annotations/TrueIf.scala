@@ -17,10 +17,8 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Makes debugging information to be printed to stdout.
-  * The provided free text is also printed out in order to
-  * identify the particular field parsing being debugged.
+  * Specifies the true value of a boolean field.
   *
-  * @param value a free text
+  * @param value the value should evaluate to true
   */
-case class Debug(value: String) extends StaticAnnotation
+case class TrueIf(value: String) extends StaticAnnotation

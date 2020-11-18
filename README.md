@@ -10,7 +10,7 @@ This library is built for Scala 2.11.12, 2.12.12 and 2.13.3
 
 ### SBT
 ```scala
-libraryDependencies += "org.sweet-delights" %% "delightful-parsing" % "0.3.0"
+libraryDependencies += "org.sweet-delights" %% "delightful-parsing" % "0.5.0"
 ```
 
 ### Maven
@@ -18,7 +18,7 @@ libraryDependencies += "org.sweet-delights" %% "delightful-parsing" % "0.3.0"
 <dependency>
   <groupId>org.sweet-delights</groupId>
   <artifactId>delightful-parsing_2.12</artifactId>
-  <version>0.3.0</version>
+  <version>0.5.0</version>
 </dependency>
 ```
 
@@ -100,7 +100,9 @@ A node or leaf type `T` can be optional (i.e. `Option[T]`) or repeatable (i.e. `
 The choice of type annotations (i.e. annotations "*on the right*") rather than variable annotations (i.e. annotations
 "*on the left*") is purely for readability purposes. As such, it is subjective and opiniated.
 
-### `@Options`
+### Case class annotations
+
+#### `@Options`
 
 Speficies some parsing options like trimming what is consumed. For now, this annotation is mandantory for nodes (case classes).
 Example:
@@ -111,103 +113,13 @@ import sweet.delights.parsing.annotations.Options
 case class Foo()
 ```
 
-### `@Length(Int)`
+### Type annotations
 
-Specifies the number of characters to be consumed explicitly. Applicable only to leaf types. Example:
-```scala
-import sweet.delights.parsing.annotations.{Length, Options}
-
-@Options(trim = true)
-case class Foo(
-  str: String @Length(5),
-  opt: Option[String] @Length(2)
-)
-```
-
-The field `str` consumes 5 characters from the input string. As the trimming option is activated, the final length of
-`str` may be less than 5.
-
-The field `opt` consumes 2 characters. In addition to the behavior above, as this is an optional field, if the trimmed
-string is empty, then `opt` becomes `None`.
-
-### `@LengthParam(String)`
-
-Specifies the length of characters to be consumed via a parameter to be provided when calling `Parser.parser[T]`. Applicable
-to leaf types only. Example:
-```scala
-import sweet.delights.parsing.annotations.{LengthParam, Options}
-import sweet.delights.parsing.Parser
-
-@Options(trim = true)
-case class Foo(
-  str: String @LengthParam("myStrSize")
-)
-
-val line = "ABCDE"
-Parser.parse[Foo](Map("myStrSize" -> 5))(line)
-```
-
-### `@Regex(String)`
-
-Specifies characters to be consumed thanks to a regular expression. Applicable of leaf types only. Example:
-```scala
-import sweet.delights.parsing.annotations.{Regex, Options}
-
-@Options(trim = true)
-case class Foo(
-  str: String @Regex("""\w{5}""")
-)
-```
-
-### `@Repetition(Int)`
-
-Specifies the number of repetitions for a list. Example:
-```scala
-import sweet.delights.parsing.annotations.{Length, Repetition, Options}
-
-@Options(trim = true)
-case class Foo(
-  strs: List[String] @Repetition(2) @Length(5),
-  bars: List[Bar]    @Repetition(3)
-)
-
-@Options(trim = true)
-case class Bar(
-  list: String @Length(1)
-)
-```
-
-`strs` is a repeatable leaf field. As such, is requires `@Length` in addition to `@Repetition`.
-
-`bars` is a repeatable node field. Only `@Repetition` is required.
-
-### `@Conditional(Int => Boolean)`
+#### `@Conditional(Int => Boolean)`
 
 Experimental. TODO.
 
-### `@TrailingSkip(Int)`
-
-Specifies a number of characters to be skipped after a field is parsed successfully. Example:
-```scala
-import sweet.delights.parsing.annotations.{Length, Options, TrailingSkip}
-import sweet.delights.parsing.Parser
-
-@Options(trim = true)
-case class Foo(
-  str1: String @Length(1),
-  str2: String @Length(1) @TrailingSkip(1),
-  str3: String @Length(1)
-)
-
-Parser.parse[Foo]("AB C")
-// res0: Foo(
-//   str1 = "AA",
-//   str2 = "BB",
-//   str3 = "CC"
-// )
-```
-
-### `@Format(String)`
+#### `@Format(String)`
 
 Specifies a format to parse a certain leaf type. For now, leaf types supported are `java.time.{LocalDate, LocalTime, LocalDateTime,
 ZonedDateTime}`. Example:
@@ -228,7 +140,7 @@ Parser.parse[Foo]("200101")
 // )
 ```
 
-### `@FormatParam(String)`
+#### `@FormatParam(String)`
 
 Same as `@Format(String)`, except the format value is to be provided as a parameter. Example:
 
@@ -248,22 +160,164 @@ Parser.parse[Foo](Map("dateFormat" -> "yyMMdd"))("200101")
 // )
 ```
 
-### `@Debug(String)`
+#### `@Length(Int)`
 
-Makes `Parser` to print debugging information to stdout, after a successful parsing. Example:
+Specifies the number of characters to be consumed explicitly. Applicable only to leaf types. Example:
 ```scala
-import sweet.delights.parsing.annotations.{Debug, Length, Options}
+import sweet.delights.parsing.annotations.{Length, Options}
+
+@Options(trim = true)
+case class Foo(
+  str: String @Length(5),
+  opt: Option[String] @Length(2)
+)
+```
+
+The field `str` consumes 5 characters from the input string. As the trimming option is activated, the final length of
+`str` may be less than 5.
+
+The field `opt` consumes 2 characters. In addition to the behavior above, as this is an optional field, if the trimmed
+string is empty, then `opt` becomes `None`.
+
+#### `@LengthParam(String)`
+
+Specifies the length of characters to be consumed via a parameter to be provided when calling `Parser.parser[T]`. Applicable
+to leaf types only. Example:
+
+```scala
+import sweet.delights.parsing.annotations.{LengthParam, Options}
 import sweet.delights.parsing.Parser
 
 @Options(trim = true)
 case class Foo(
-  str: String @Length(1) @Debug("Hello World!")
+  str: String @LengthParam("myStrSize")
 )
 
-Parser.parse[Foo]("A")
-// ctx: idx = -1, offset = 1, params = Map(), options = Options(true), annotations = List(Length(1), Debug(Hello World!))
+Parser.parse[Foo](Map("myStrSize" -> 5))("ABCDE")
 // res0: Foo(
-//   str = "A"
+//   str = "ABCDE"
+// )
+```
+
+#### `@Lenient`
+
+Specifies to ignore any exceptions raised during the parsing of a leaf field. Example:
+
+```scala
+import sweet.delights.parsing.annotations.{Length, Lenient, Options}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  integer: Int        @Length(5) @Lenient,
+  option: Option[Int] @Length(5) @Lenient
+)
+
+Parser.parse[Foo](Map("myStrSize" -> 5))("xxxxxXXXXX")
+// res0: Foo(
+//   integer = 0,
+//   option = None
+// )
+```
+
+NB:
+- the default value of an integer is `0`
+- the default value of an `Option` is `None`
+
+#### `@Regex(String)`
+
+Specifies characters to be consumed thanks to a regular expression. Applicable of leaf types only. Example:
+```scala
+import sweet.delights.parsing.annotations.{Regex, Options}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  str: String @Regex("""\w{5}""")
+)
+
+Parser.parse[Foo]("ABCDEF")
+// res0: Foo(
+//   str = "ABCDE"
+// )
+```
+
+#### `@Repetition(Int)`
+
+Specifies the number of repetitions for a list. Example:
+```scala
+import sweet.delights.parsing.annotations.{Length, Repetition, Options}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  strs: List[String] @Repetition(2) @Length(5),
+  bars: List[Bar]    @Repetition(3)
+)
+
+@Options(trim = true)
+case class Bar(
+  str: String @Length(1)
+)
+
+Parser.parse[Foo]("ABCDEFGHIJKLM")
+// res0: Foo(
+//   strs = List("ABCDE", "FGHIJ"),
+//   bars = List(
+//     Bar(str = "K"),
+//     Bar(str = "L"),
+//     Bar(str = "M")
+//   )
+// )
+```
+
+`strs` is a repeatable leaf field. As such, is requires `@Length` in addition to `@Repetition`.
+
+`bars` is a repeatable node field. Only `@Repetition` is required.
+
+#### `@TrailingSkip(Int)`
+
+Specifies a number of characters to be skipped after a field is parsed successfully. Example:
+```scala
+import sweet.delights.parsing.annotations.{Length, Options, TrailingSkip}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  str1: String @Length(1),
+  str2: String @Length(1) @TrailingSkip(1),
+  str3: String @Length(1)
+)
+
+Parser.parse[Foo]("AB_D")
+// res0: Foo(
+//   str1 = "A",
+//   str2 = "B",
+//   str3 = "D"
+// )
+```
+
+#### `@TrueIf`
+
+For a `Boolean` field, specifies a string that should be matched to evaluate the field to `true`. Example:
+
+```scala
+import sweet.delights.parsing.annotations.{Length, Options, TrueIf}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  bool: Boolean @Length(3) @TrueIf("Yes") 
+)
+
+Parser.parse[Foo]("Yes")
+// res0: Foo(
+//   bool = true
+// )
+
+Parser.parse[Foo]("xxx")
+// res1: Foo(
+//   bool = false
 // )
 ```
 

@@ -14,10 +14,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package sweet.delights.parsing
 
-import java.time.LocalDate
+import java.time.{LocalDate, MonthDay}
 
 import org.specs2.mutable.Specification
-import sweet.delights.parsing.annotations.{Conditional, Format, Length, LengthParam, Options, Regex, Repetition, TrailingSkip}
+import sweet.delights.parsing.annotations.{Conditional, Format, Length, LengthParam, Lenient, Options, Regex, Repetition, TrailingSkip, TrueIf}
 import sweet.delights.parsing.Parser._
 
 class ParserSpec extends Specification {
@@ -26,11 +26,13 @@ class ParserSpec extends Specification {
 
   @Options(trim = true)
   case class Foo(
-    opt: Option[String] @Length(3),
-    str: String         @Regex("""\w{3}""") @TrailingSkip(1),
-    integer: String     @LengthParam("intSize"),
-    more: List[Bar]     @Repetition(2),
-    date: LocalDate     @Length(6) @Format("yyMMdd")
+    opt: Option[String]       @Length(3),
+    str: String               @Regex("""\w{3}""") @TrailingSkip(1),
+    integer: String           @LengthParam("intSize"),
+    more: List[Bar]           @Repetition(2),
+    date: LocalDate           @Length(6) @Format("yyMMdd"),
+    bool: Boolean             @Length(3) @TrueIf("Hi!"),
+    lenient: Option[MonthDay] @Length(5) @Format("ddMMM") @Lenient
   )
 
   @Options(trim = true)
@@ -47,11 +49,13 @@ class ParserSpec extends Specification {
         Bar(List("AAAAA", "BBBBB")),
         Bar(List("CCCCC", "DDDDD"))
       ),
-      date = LocalDate.of(2020, 1, 1)
+      date = LocalDate.of(2020, 1, 1),
+      bool = true,
+      lenient = None
     )
 
     "parse a line" in {
-      val line = "optstr_integerAAAAABBBBBCCCCCDDDDD200101"
+      val line = "optstr_integerAAAAABBBBBCCCCCDDDDD200101Hi!xxxxx"
       val parsed = parse[Foo](Map("intSize" -> 7))(line)
       parsed must beSome
       parsed.get mustEqual foo

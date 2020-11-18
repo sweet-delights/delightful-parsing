@@ -17,8 +17,7 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies the format of a leaf field through a parameter.
-  *
-  * @param value the parameter name
+  * Specifies to ignore any exception when parsing a leaf type. The value
+  * is set to its default.
   */
-case class FormatParam(value: String) extends StaticAnnotation
+case class Lenient() extends StaticAnnotation
