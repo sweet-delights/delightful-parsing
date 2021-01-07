@@ -32,10 +32,23 @@ import java.time.{
   ZonedDateTime
 }
 import java.util.regex.Pattern
-
 import shapeless.ops.hlist.{LeftFolder, Mapper, Reverse, ToTraversable, Zip}
 import shapeless.{:+:, ::, Annotation, CNil, Coproduct, Generic, HList, HNil, Lazy, Poly1, Poly2}
-import sweet.delights.parsing.annotations.{Conditional, Format, FormatParam, Length, LengthParam, Lenient, Options, Regex, Repetition, TrailingSkip, TrueIf}
+import sweet.delights.parsing.annotations.{
+  Conditional,
+  Format,
+  FormatParam,
+  Ignore,
+  IgnoreParam,
+  Length,
+  LengthParam,
+  Lenient,
+  Options,
+  Regex,
+  Repetition,
+  TrailingSkip,
+  TrueIf
+}
 import sweet.delights.typeclass.Default
 
 import scala.annotation.StaticAnnotation
@@ -66,71 +79,66 @@ object Parser {
 
   implicit lazy val stringParser: Parser[String] = new Parser[String] {
     def parse(ctx: Context): (Option[String], Context) = {
-      val opt = {
-        // @Length
-        for {
-          length <- ctx.getAnnotation[Length]
-          parsed = ctx.line.substring(ctx.offset, ctx.offset + length.value)
-        } yield {
-          (Some(parsed), ctx.incOffset(length.value))
-        }
-      }.orElse {
-          // @LengthParam
-          for {
-            lengthParam <- ctx.getAnnotation[LengthParam]
-            length = ctx
-              .getParameter[Int](lengthParam.value)
-              .getOrElse(
-                throw new IllegalArgumentException(s"""Could not find parameter "${lengthParam.value}"""")
-              )
-            parsed = ctx.line.substring(ctx.offset, ctx.offset + length)
-          } yield {
-            (Some(parsed), ctx.incOffset(length))
-          }
-        }
-        .orElse {
-          // @Regex
-          for {
-            regex <- ctx.getAnnotation[Regex]
-          } yield {
-            val pattern = Pattern.compile(regex.value)
-            val matcher = pattern.matcher(ctx.line)
+      val skip = toSkip(ctx)
 
-            if (matcher.find(ctx.offset)) {
-              val start = matcher.start()
-              val end = matcher.`end`()
-              val length = end - start
-              val parsed = ctx.line.substring(start, end)
-              (Some(parsed), ctx.incOffset(length))
-            } else {
-              throw new IllegalArgumentException(s"Could not parse anything with regular expression: ${regex.value}")
+      val res =
+        if (skip) Some((None, ctx))
+        else {
+          val opt = {
+            // @Length
+            for {
+              length <- ctx.getAnnotation[Length]
+              parsed = ctx.line.substring(ctx.offset, ctx.offset + length.value)
+            } yield {
+              (Some(parsed), ctx.incOffset(length.value))
             }
-          }
-        }
+          }.orElse {
+              // @LengthParam
+              for {
+                lengthParam <- ctx.getAnnotation[LengthParam]
+                length = ctx.getParameterOrFail[Int](lengthParam.value)
+                parsed = ctx.line.substring(ctx.offset, ctx.offset + length)
+              } yield {
+                (Some(parsed), ctx.incOffset(length))
+              }
+            }
+            .orElse {
+              // @Regex
+              for {
+                regex <- ctx.getAnnotation[Regex]
+              } yield {
+                val pattern = Pattern.compile(regex.value)
+                val matcher = pattern.matcher(ctx.line)
 
-      val res = opt
-        .map {
-          case (some, next) => if (ctx.options.trim) (some.map(_.trim).filterNot(_.isEmpty), next) else (some, next)
-        }
-        .map {
-          case (some, next) =>
-            ctx.getAnnotation[Conditional] match {
-              case Some(cond) => if (cond.func(ctx.idx)) (some, next) else (None, ctx)
-              case None => (some, next)
+                if (matcher.find(ctx.offset)) {
+                  val start = matcher.start()
+                  val end = matcher.`end`()
+                  val length = end - start
+                  val parsed = ctx.line.substring(start, end)
+                  (Some(parsed), ctx.incOffset(length))
+                } else {
+                  throw new IllegalArgumentException(s"Could not parse anything with regular expression: ${regex.value}")
+                }
+              }
             }
-        }
-        .map {
-          case (some, next) =>
-            ctx.getAnnotation[TrailingSkip] match {
-              case Some(skip) => (some, next.incOffset(skip.value))
-              case None => (some, next)
+
+          opt
+            .map {
+              case (some, next) => if (ctx.options.trim) (some.map(_.trim).filterNot(_.isEmpty), next) else (some, next)
+            }
+            .map {
+              case (some, next) =>
+                ctx.getAnnotation[TrailingSkip] match {
+                  case Some(skip) => (some, next.incOffset(skip.value))
+                  case None => (some, next)
+                }
             }
         }
 
       if (ctx.options.debug) res.foreach {
         case (some, next) =>
           println(
-            s"ctx: idx = ${ctx.idx}, offset = ${ctx.offset}, length = ${next.offset - ctx.offset}, res = ${some}, params = ${ctx.parameters}, options = ${ctx.options}, annotations = ${ctx.annotations}"
+            s"ctx: idx = ${ctx.idx}, offset = ${ctx.offset}, length = ${next.offset - ctx.offset}, skip = ${skip}, res = ${some}, params = ${ctx.parameters}, options = ${ctx.options}, annotations = ${ctx.annotations}"
           )
       }
 
@@ -253,30 +261,45 @@ object Parser {
 
   implicit lazy val optionStringParser: Parser[Option[String]] = new Parser[Option[String]] {
     def parse(ctx: Context): (Option[Option[String]], Context) = {
-      val (parsed, next) = optionParser[String].parse(ctx)
-      (parsed.map(_.filterNot(_.trim.isEmpty)), next)
+      val skip = toSkip(ctx)
+
+      if (skip) (None, ctx)
+      else {
+        val (parsed, next) = optionParser[String].parse(ctx)
+        (parsed.map(_.filterNot(_.trim.isEmpty)), next)
+      }
     }
   }
 
   implicit def optionParser[T](implicit parser: Parser[T]): Parser[Option[T]] = new Parser[Option[T]] {
     def parse(ctx: Context): (Option[Option[T]], Context) = {
-      val (parsed, next) = parser.parse(ctx)
-      (Option(parsed).filterNot(_.isEmpty), next)
+      val skip = toSkip(ctx)
+
+      if (skip) (None, ctx)
+      else {
+        val (parsed, next) = parser.parse(ctx)
+        (Option(parsed).filterNot(_.isEmpty), next)
+      }
     }
   }
 
   implicit def listParser[T](implicit parser: Parser[T]): Parser[List[T]] = new Parser[List[T]] {
     def parse(ctx: Context): (Option[List[T]], Context) = {
-      val repetition = ctx.getAnnotationOrFail[Repetition]
-      val (parsed, next) = (0 until repetition.value).foldLeft((List.empty[T], ctx)) {
-        case ((list, curr), i) =>
-          parser.parse(curr.withIndex(i)) match {
-            case (Some(parsed), next) => (parsed :: list, next)
-            case (None, next) => (list, next)
-          }
-      }
+      val skip = toSkip(ctx)
 
-      (Option(parsed.reverse).filterNot(_.isEmpty), next.withIndex(-1))
+      if (skip) (None, ctx)
+      else {
+        val repetition = ctx.getAnnotationOrFail[Repetition]
+        val (parsed, next) = (0 until repetition.value).foldLeft((List.empty[T], ctx)) {
+          case ((list, curr), i) =>
+            parser.parse(curr.withIndex(i)) match {
+              case (Some(parsed), next) => (parsed :: list, next)
+              case (None, next) => (list, next)
+            }
+        }
+
+        (Option(parsed.reverse).filterNot(_.isEmpty), next.withIndex(-1))
+      }
     }
   }
 
@@ -314,6 +337,8 @@ object Parser {
     implicit val caseConditional: Case.Aux[Conditional, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseFormat: Case.Aux[Format, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseFormatParam: Case.Aux[FormatParam, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
+    implicit val caseIgnore: Case.Aux[Ignore, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
+    implicit val caseIgnoreParam: Case.Aux[IgnoreParam, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseLength: Case.Aux[Length, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseLengthParam: Case.Aux[LengthParam, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseLenient: Case.Aux[Lenient, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
@@ -400,6 +425,14 @@ object Parser {
     if (lenient) opt.flatMap(str => Try(parse(str)).toOption)
     else opt.map(parse)
   }
+
+  private def toSkip(ctx: Context): Boolean =
+    ctx
+      .getAnnotation[Conditional]
+      .map(!_.func(ctx.idx))
+      .orElse(ctx.getAnnotation[Ignore].map(_.value))
+      .orElse(ctx.getAnnotation[IgnoreParam].map(a => ctx.getParameterOrFail[Boolean](a.value)))
+      .getOrElse(false)
 
   def apply[T](implicit parser: Parser[T]): Parser[T] = parser
 

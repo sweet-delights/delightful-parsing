@@ -119,7 +119,7 @@ case class Foo()
 
 Experimental. TODO.
 
-#### `@Format(String)`
+#### `@Format(String)` & `@FormatParam(String)`
 
 Specifies a format to parse a certain leaf type. For now, leaf types supported are `java.time.{LocalDate, LocalTime, LocalDateTime,
 ZonedDateTime}`. Example:
@@ -140,9 +140,7 @@ Parser.parse[Foo]("200101")
 // )
 ```
 
-#### `@FormatParam(String)`
-
-Same as `@Format(String)`, except the format value is to be provided as a parameter. Example:
+The format can be provided through a parameter by using the `@FormatParam(String)` annotation.
 
 ```scala
 import java.time.LocalDate
@@ -160,9 +158,53 @@ Parser.parse[Foo](Map("dateFormat" -> "yyMMdd"))("200101")
 // )
 ```
 
-#### `@Length(Int)`
+#### `@Ignore(Boolean) & @IgnoreParam(String)`
 
-Specifies the number of characters to be consumed explicitly. Applicable only to leaf types. Example:
+Specified whether the parsing of a field should be bypassed (ignored) or not. Applicable only to leaf types.
+Example:
+
+```scala
+import sweet.delights.parsing.annotations.{Ignore, Length, Options}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  str: String @Length(5) @Ignore(true),
+  opt: Option[String] @Length(2)
+)
+
+Parser.parse[Foo]("XX")
+// res0: Foo(
+//   str = "",
+//   opt = Some("XX")
+// )
+```
+
+The parsing of `str` is skipped completely. The field is assigned a default value.
+
+Ignoring a field can be set through a parameter by using the `@IgnoreParam(String)` annotation.
+
+```scala
+import sweet.delights.parsing.annotations.{IgnoreParam, Length, Options}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  str: String @Length(5) @IgnoreParam("ignoreMe"),
+  opt: Option[String] @Length(2)
+)
+
+Parser.parse[Foo](Map("ignoreMe" -> true))("XX")
+// res0: Foo(
+//   str = "",
+//   opt = Some("XX")
+// )
+```
+
+#### `@Length(Int) & @LengthParam(String)`
+
+Specifies the number of characters to be consumed explicitly. Example:
+
 ```scala
 import sweet.delights.parsing.annotations.{Length, Options}
 
@@ -179,10 +221,7 @@ The field `str` consumes 5 characters from the input string. As the trimming opt
 The field `opt` consumes 2 characters. In addition to the behavior above, as this is an optional field, if the trimmed
 string is empty, then `opt` becomes `None`.
 
-#### `@LengthParam(String)`
-
-Specifies the length of characters to be consumed via a parameter to be provided when calling `Parser.parser[T]`. Applicable
-to leaf types only. Example:
+The length can be provided through a parameter by using the `@LengthParam` annotation.
 
 ```scala
 import sweet.delights.parsing.annotations.{LengthParam, Options}

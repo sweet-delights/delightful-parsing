@@ -46,7 +46,7 @@ case class Context(
   def withOptions(options: Options): Context = this.copy(options = options)
 
   def getParameterOrFail[T: ClassTag](param: String): T =
-    getParameter[T](param).getOrElse(throw new IllegalArgumentException(s"Annotation @${classTag[T].runtimeClass.getSimpleName} not found"))
+    getParameter[T](param).getOrElse(throw new IllegalArgumentException(s"Parameter ${param} not found"))
 
   def getParameter[T: ClassTag](param: String): Option[T] =
     parameters.get(param).map(_.asInstanceOf[T])
