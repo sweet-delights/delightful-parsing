@@ -14,7 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package sweet.delights.parsing
 
-import java.time.format.DateTimeFormatter
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.{
   Duration,
   Instant,
@@ -395,6 +395,8 @@ object Parser {
     }
   }
 
+  private lazy val formatterCache: scala.collection.mutable.Map[String, DateTimeFormatter] = scala.collection.mutable.Map.empty
+
   private def parseJavaTime[T](ctx: Context)(
     parse: String => T,
     parseFormat: (String, DateTimeFormatter) => T
@@ -407,7 +409,12 @@ object Parser {
 
     format match {
       case Some(fmt) =>
-        val formatter = DateTimeFormatter.ofPattern(fmt)
+        val formatter = formatterCache.getOrElseUpdate(fmt, {
+          new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .appendPattern(fmt)
+            .toFormatter
+        })
         (parseLeaf(parsed, ctx)(parseFormat(_, formatter)), next)
 
       case None =>

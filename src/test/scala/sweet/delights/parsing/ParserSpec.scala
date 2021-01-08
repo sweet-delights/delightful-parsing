@@ -34,6 +34,7 @@ class ParserSpec extends Specification {
     more: List[Bar]           @Repetition(2),
     date: LocalDate           @Length(6) @Format("yyMMdd"),
     bool: Boolean             @Length(3) @TrueIf("Hi!"),
+    monthDay: MonthDay        @Length(5) @Format("ddMMM"),
     lenient: Option[MonthDay] @Length(5) @Format("ddMMM") @Lenient
   )
 
@@ -54,11 +55,12 @@ class ParserSpec extends Specification {
       ),
       date = LocalDate.of(2020, 1, 1),
       bool = true,
+      monthDay = MonthDay.of(8, 13),
       lenient = None
     )
 
     "parse a line" in {
-      val line = "optstr_integerAAAAABBBBBCCCCCDDDDD200101Hi!xxxxx"
+      val line = "optstr_integerAAAAABBBBBCCCCCDDDDD200101Hi!13AUGxxxxx"
       val parsed = parse[Foo](Map("intSize" -> 7))(line)
       parsed must beSome
       parsed.get mustEqual foo
