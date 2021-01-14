@@ -263,6 +263,32 @@ NB:
 - the default value of an integer is `0`
 - the default value of an `Option` is `None`
 
+#### `@ParseFunc[T](String => Option[T])`
+
+Provides a user defined parsing function (UDPF) for a leaf type `T`. When present, it
+overrides default parsing functions or any parsing function derived from `@Format` or
+`@FormatParam` annotations. The UDPF must be statically defined. Example:
+
+```scala
+import java.time.LocalTime
+import sweet.delights.parsing.annotations.{Length, ParseFunc, Options}
+import sweet.delights.parsing.Parser
+
+@Options(trim = true)
+case class Foo(
+  time: LocalTime   @Length(5) @ParseFunc[LocalTime](Foo.removePrefix)
+)
+
+object Foo {
+  def removePrefix(s: String): Option[LocalTime] = Some(LocalTime.parse(s.substring(1)))
+}
+
+Parser.parse[Foo]("X03:45")
+// res0: Foo(
+//   time = LocalTime.of(3, 45)
+// )
+```
+
 #### `@Regex(String)`
 
 Specifies characters to be consumed thanks to a regular expression. Applicable of leaf types only. Example:

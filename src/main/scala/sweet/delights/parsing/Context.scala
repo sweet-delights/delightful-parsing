@@ -35,7 +35,8 @@ case class Context(
   annotations: List[StaticAnnotation],
   parameters: Map[String, Any],
   options: Options,
-  idx: Int // index if curr context inside a list or option
+  idx: Int, // index if curr context inside a list or option
+  debug: Boolean
 ) {
   def incOffset(inc: Int): Context = this.copy(offset = offset + inc)
 

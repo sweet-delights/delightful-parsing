@@ -44,6 +44,7 @@ import sweet.delights.parsing.annotations.{
   LengthParam,
   Lenient,
   Options,
+  ParseFunc,
   Regex,
   Repetition,
   TrailingSkip,
@@ -135,7 +136,7 @@ object Parser {
             }
         }
 
-      if (ctx.options.debug) res.foreach {
+      if (ctx.debug || ctx.options.debug) res.foreach {
         case (some, next) =>
           println(
             s"ctx: idx = ${ctx.idx}, offset = ${ctx.offset}, length = ${next.offset - ctx.offset}, skip = ${skip}, res = ${some}, params = ${ctx.parameters}, options = ${ctx.options}, annotations = ${ctx.annotations}"
@@ -342,6 +343,7 @@ object Parser {
     implicit val caseLength: Case.Aux[Length, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseLengthParam: Case.Aux[LengthParam, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseLenient: Case.Aux[Lenient, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
+    implicit val caseParseFunc: Case.Aux[ParseFunc[_], List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseRegex: Case.Aux[Regex, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseRepetition: Case.Aux[Repetition, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
     implicit val caseTrailingSkip: Case.Aux[TrailingSkip, List[StaticAnnotation], List[StaticAnnotation]] = at((c, acc) => c :: acc)
@@ -428,9 +430,15 @@ object Parser {
   }
 
   private def parseLeaf[T](opt: Option[String], ctx: Context)(parse: String => T): Option[T] = {
+    val parseFunc = ctx
+      .getAnnotation[ParseFunc[_]]
+      .map(_.value.asInstanceOf[String => Option[T]])
+
+    def p(str: String): T = parseFunc.flatMap(f => f(str)).getOrElse(parse(str))
+
     val lenient = ctx.getAnnotation[Lenient].isDefined
-    if (lenient) opt.flatMap(str => Try(parse(str)).toOption)
-    else opt.map(parse)
+    if (lenient) opt.flatMap(str => Try(p(str)).toOption)
+    else opt.map(p)
   }
 
   private def toSkip(ctx: Context): Boolean =
@@ -446,7 +454,7 @@ object Parser {
   def parse[T](line: String)(implicit parser: Parser[T]): Option[T] = parse[T](Map.empty[String, Any])(line)
 
   def parse[T](params: Map[String, Any])(line: String)(implicit parser: Parser[T]): Option[T] = {
-    val ctx = Context(line, 0, Nil, params, Options(false, false), -1)
+    val ctx = Context(line, 0, Nil, params, Options(false, false), -1, params.get("debug").contains(true))
     parser.parse(ctx)._1
   }
 
