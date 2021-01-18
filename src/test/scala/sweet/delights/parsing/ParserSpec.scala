@@ -42,7 +42,7 @@ class ParserSpec extends Specification {
 
   @Options(trim = true, debug = debug)
   case class Foo(
-    foo: String               @Length(99) @Ignore(true),
+    foo: String               @Length(99) @Ignore,
     opt: Option[String]       @Length(3),
     str: String               @Regex("""\w{3}""") @TrailingSkip(1),
     integer: String           @LengthParam("intSize"),

@@ -445,7 +445,7 @@ object Parser {
     ctx
       .getAnnotation[Conditional]
       .map(!_.func(ctx.idx))
-      .orElse(ctx.getAnnotation[Ignore].map(_.value))
+      .orElse(ctx.getAnnotation[Ignore].map(_ => true))
       .orElse(ctx.getAnnotation[IgnoreParam].map(a => ctx.getParameterOrFail[Boolean](a.value)))
       .getOrElse(false)
 

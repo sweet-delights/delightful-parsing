@@ -158,7 +158,7 @@ Parser.parse[Foo](Map("dateFormat" -> "yyMMdd"))("200101")
 // )
 ```
 
-#### `@Ignore(Boolean) & @IgnoreParam(String)`
+#### `@Ignore & @IgnoreParam(String)`
 
 Specified whether the parsing of a field should be bypassed (ignored) or not. Applicable only to leaf types.
 Example:
@@ -169,7 +169,7 @@ import sweet.delights.parsing.Parser
 
 @Options(trim = true)
 case class Foo(
-  str: String @Length(5) @Ignore(true),
+  str: String @Length(5) @Ignore,
   opt: Option[String] @Length(2)
 )
 
@@ -180,7 +180,7 @@ Parser.parse[Foo]("XX")
 // )
 ```
 
-The parsing of `str` is skipped completely. The field is assigned a default value.
+The parsing of `str` is skipped completely. The field is assigned an empty string, its default value.
 
 Ignoring a field can be set through a parameter by using the `@IgnoreParam(String)` annotation.
 

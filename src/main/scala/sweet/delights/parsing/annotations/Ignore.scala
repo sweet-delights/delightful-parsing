@@ -21,4 +21,4 @@ import scala.annotation.StaticAnnotation
   *
   * @param value true to ignore, false to parse
   */
-case class Ignore(value: Boolean) extends StaticAnnotation
+case class Ignore() extends StaticAnnotation
