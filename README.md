@@ -6,7 +6,7 @@
 1) For now, a much smaller scope (ie fixed-width strings)
 2) Defining the parsing specification with Scala case classes and type annotations, instead of XSD
 
-This library is built for Scala 2.11.12, 2.12.12 and 2.13.3
+This library is built for Scala 2.11, 2.12 and 2.13
 
 ### SBT
 ```scala
