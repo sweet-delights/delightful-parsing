@@ -16,7 +16,7 @@ developers := List(
   )
 )
 scalaVersion := "2.12.13"
-crossScalaVersions := Seq("2.11.12", "2.12.13", "2.13.3")
+crossScalaVersions := Seq("2.11.12", "2.12.13", "2.13.6")
 checksums in update := Nil
 libraryDependencies ++= Seq(
   "org.scala-lang"     % "scala-reflect"           % scalaVersion.value % Provided,
