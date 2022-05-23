@@ -6,11 +6,11 @@
 1) For now, a much smaller scope (ie fixed-width strings)
 2) Defining the parsing specification with Scala case classes and type annotations, instead of XSD
 
-This library is built for Scala 2.11, 2.12 and 2.13
+This library is built for Scala 2.12.15, 2.13.8 and 3.1.2
 
 ### SBT
 ```scala
-libraryDependencies += "org.sweet-delights" %% "delightful-parsing" % "0.6.1" // check latest version above
+libraryDependencies += "org.sweet-delights" %% "delightful-parsing" % "0.9.0" // check latest version above
 ```
 
 ### Maven
@@ -18,7 +18,7 @@ libraryDependencies += "org.sweet-delights" %% "delightful-parsing" % "0.6.1" //
 <dependency>
   <groupId>org.sweet-delights</groupId>
   <artifactId>delightful-parsing_2.12</artifactId>
-  <version>0.5.0</version>
+  <version>0.9.0</version>
 </dependency>
 ```
 
