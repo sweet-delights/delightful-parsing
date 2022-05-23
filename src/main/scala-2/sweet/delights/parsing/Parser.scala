@@ -33,7 +33,7 @@ import java.time.{
 }
 import java.util.regex.Pattern
 import shapeless.ops.hlist.{LeftFolder, Mapper, Reverse, ToTraversable, Zip}
-import shapeless.{:+:, ::, Annotation, CNil, Coproduct, Generic, HList, HNil, Lazy, Poly1, Poly2}
+import shapeless.{:+:, ::, AllTypeAnnotations, Annotation, CNil, Coproduct, Generic, HList, HNil, Lazy, Poly1, Poly2}
 import sweet.delights.parsing.annotations.{
   Conditional,
   Format,
