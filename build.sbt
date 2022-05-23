@@ -1,6 +1,10 @@
 import java.util.regex.Pattern
 import sbt.Keys.scalacOptions
 
+lazy val scala2_12 = "2.12.15"
+lazy val scala2_13 = "2.13.8"
+lazy val scala3 = "3.1.2"
+
 name := "delightful-parsing"
 organization := "org.sweet-delights"
 homepage := Option(url("https://github.com/sweet-delights/delightful-parsing"))
@@ -15,26 +19,49 @@ developers := List(
     url = url("https://github.com/pgrandjean")
   )
 )
-scalaVersion := "2.12.15"
-crossScalaVersions := Seq("2.11.12", "2.12.15", "2.13.8")
-checksums in update := Nil
-libraryDependencies ++= Seq(
-  "org.scala-lang"     % "scala-reflect"           % scalaVersion.value % Provided,
-  "org.sweet-delights" %% "delightful-typeclasses" % "0.1.1",
-  "org.specs2"         %% "specs2-core"            % "4.5.1" % "test"
-)
-scalacOptions ++= Seq(
-  "-deprecation",
-  "-target:jvm-1.8",
-  "-feature"
-)
-javacOptions in Compile ++= Seq(
+scalaVersion := scala3
+crossScalaVersions := Seq(scala2_12, scala2_13, scala3)
+update / checksums := Nil
+libraryDependencies ++= {
+  scalaBinaryVersion.value match {
+    case "3" =>
+      Seq(
+        "org.typelevel"      %% "shapeless3-deriving"    % "3.1.0",
+        "org.sweet-delights" %% "delightful-typeclasses" % "0.2.0",
+        "org.specs2"         %% "specs2-core"            % "4.15.0" % "test"
+      )
+    case _ =>
+      Seq(
+        "org.scala-lang"     % "scala-reflect"           % scalaVersion.value % Provided,
+        "org.sweet-delights" %% "delightful-typeclasses" % "0.2.0",
+        "org.specs2"         %% "specs2-core"            % "4.15.0" % "test"
+      )
+  }
+}
+scalacOptions ++= {
+  scalaBinaryVersion.value match {
+    case "3" =>
+      Seq(
+        "-deprecation",
+        "-Xtarget",
+        "8",
+        "-feature"
+      )
+    case _ =>
+      Seq(
+        "-deprecation",
+        "-target:jvm-1.8",
+        "-feature"
+      )
+  }
+}
+Compile / javacOptions ++= Seq(
   "-source",
   "1.8",
   "-target",
   "1.8"
 )
-scalafmtOnCompile in ThisBuild := true
+ThisBuild / scalafmtOnCompile := true
 publishMavenStyle := true
 publishTo := Some {
   val nexus = "https://oss.sonatype.org/"
@@ -61,7 +88,7 @@ releaseVersion := { ver =>
 releaseNextVersion := { ver =>
   Version(ver).map(_.withoutQualifier.bump.string).getOrElse(versionFormatError(ver)) + "-SNAPSHOT"
 }
-releaseCommitMessage := s"[sbt-release] setting version to ${(version in ThisBuild).value}"
+releaseCommitMessage := s"[sbt-release] setting version to ${(ThisBuild / version).value}"
 bugfixRegexes := List(s"${Pattern.quote("[patch]")}.*").map(_.r)
 minorRegexes := List(s"${Pattern.quote("[minor]")}.*").map(_.r)
 majorRegexes := List(s"${Pattern.quote("[major]")}.*").map(_.r)

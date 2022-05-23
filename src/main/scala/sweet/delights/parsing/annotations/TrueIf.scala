@@ -17,8 +17,9 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies the true value of a boolean field.
-  *
-  * @param value the value should evaluate to true
-  */
+ * Specifies the true value of a boolean field.
+ *
+ * @param value
+ *   the value should evaluate to true
+ */
 case class TrueIf(value: String) extends StaticAnnotation

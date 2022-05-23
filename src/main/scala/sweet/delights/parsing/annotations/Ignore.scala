@@ -17,8 +17,9 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies to ignore (or not) the parsing of a field.
-  *
-  * @param value true to ignore, false to parse
-  */
+ * Specifies to ignore (or not) the parsing of a field.
+ *
+ * @param value
+ *   true to ignore, false to parse
+ */
 case class Ignore() extends StaticAnnotation

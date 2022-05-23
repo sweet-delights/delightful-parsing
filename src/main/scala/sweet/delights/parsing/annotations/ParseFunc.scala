@@ -17,11 +17,13 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Provides a parsing function for type `T`.
-  *
-  * Overrides any default parsing function and @Format annotations.
-  *
-  * @param value a function that parses a string
-  * @tparam T type to be parsed
-  */
+ * Provides a parsing function for type `T`.
+ *
+ * Overrides any default parsing function and @Format annotations.
+ *
+ * @param value
+ *   a function that parses a string
+ * @tparam T
+ *   type to be parsed
+ */
 case class ParseFunc[T](value: String => Option[T]) extends StaticAnnotation

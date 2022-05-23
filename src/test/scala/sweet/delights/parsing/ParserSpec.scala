@@ -42,16 +42,16 @@ class ParserSpec extends Specification {
 
   @Options(trim = true, debug = debug)
   case class Foo(
-    foo: String               @Length(99) @Ignore,
+    foo: String               @Length(99)         @Ignore,
     opt: Option[String]       @Length(3),
     str: String               @Regex("""\w{3}""") @TrailingSkip(1),
     integer: String           @LengthParam("intSize"),
     more: List[Bar]           @Repetition(2),
-    date: LocalDate           @Length(6) @Format("yyMMdd"),
-    time: LocalTime           @Length(6) @ParseFunc[LocalTime](removePrefix),
-    bool: Boolean             @Length(3) @TrueIf("Hi!"),
-    monthDay: MonthDay        @Length(5) @Format("ddMMM"),
-    lenient: Option[MonthDay] @Length(5) @Format("ddMMM") @Lenient
+    date: LocalDate           @Length(6)          @Format("yyMMdd"),
+    time: LocalTime           @Length(6)          @ParseFunc[LocalTime](removePrefix),
+    bool: Boolean             @Length(3)          @TrueIf("Hi!"),
+    monthDay: MonthDay        @Length(5)          @Format("ddMMM"),
+    lenient: Option[MonthDay] @Length(5)          @Format("ddMMM") @Lenient
   )
 
   @Options(trim = true, debug = debug)

@@ -17,8 +17,9 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies the format of a leaf field.
-  *
-  * @param value the pattern
-  */
+ * Specifies the format of a leaf field.
+ *
+ * @param value
+ *   the pattern
+ */
 case class Format(value: String) extends StaticAnnotation

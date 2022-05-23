@@ -20,15 +20,21 @@ import scala.annotation.StaticAnnotation
 import scala.reflect.{classTag, ClassTag}
 
 /**
-  * Parsing context used internally by [[Parser]].
-  *
-  * @param line string being parsed
-  * @param offset position in line
-  * @param annotations list of annotations in context
-  * @param parameters list of input parameters
-  * @param options optional parsing features
-  * @param idx index if current context inside a lift or option
-  */
+ * Parsing context used internally by [[Parser]].
+ *
+ * @param line
+ *   string being parsed
+ * @param offset
+ *   position in line
+ * @param annotations
+ *   list of annotations in context
+ * @param parameters
+ *   list of input parameters
+ * @param options
+ *   optional parsing features
+ * @param idx
+ *   index if current context inside a lift or option
+ */
 case class Context(
   line: String,
   offset: Int,
@@ -38,7 +44,7 @@ case class Context(
   idx: Int, // index if curr context inside a list or option
   debug: Boolean
 ) {
-  def incOffset(inc: Int): Context = this.copy(offset = offset + inc)
+  def +=(inc: Int): Context = this.copy(offset = offset + inc)
 
   def withAnnotations(annotations: List[StaticAnnotation]): Context = this.copy(annotations = annotations)
 

@@ -17,9 +17,9 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies the number of characters to skip after a
-  * successful string parsing.
-  *
-  * @param value number of characters
-  */
+ * Specifies the number of characters to skip after a successful string parsing.
+ *
+ * @param value
+ *   number of characters
+ */
 case class TrailingSkip(value: Int) extends StaticAnnotation

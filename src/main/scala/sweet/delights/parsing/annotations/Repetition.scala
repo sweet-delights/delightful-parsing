@@ -17,8 +17,9 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies a fixed number of repetitions for lists.
-  *
-  * @param value a number of repetitions
-  */
+ * Specifies a fixed number of repetitions for lists.
+ *
+ * @param value
+ *   a number of repetitions
+ */
 case class Repetition(value: Int) extends StaticAnnotation

@@ -17,7 +17,6 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies to ignore any exception when parsing a leaf type. The value
-  * is set to its default.
-  */
+ * Specifies to ignore any exception when parsing a leaf type. The value is set to its default.
+ */
 case class Lenient() extends StaticAnnotation

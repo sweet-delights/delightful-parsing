@@ -17,12 +17,12 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies a parameterized width for a field to be parsed.
-  * The parameter name can be provided by calling:
-  * ```scala
-  * Parser.parse[T](params: Map[String, Any]) _
-  * ```
-  *
-  * @param value the name of the parameter.
-  */
+ * Specifies a parameterized width for a field to be parsed. The parameter name can be provided by calling:
+ * ```scala
+ * Parser.parse[T](params: Map[String, Any]) _
+ * ```
+ *
+ * @param value
+ *   the name of the parameter.
+ */
 case class LengthParam(value: String) extends StaticAnnotation

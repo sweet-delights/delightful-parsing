@@ -17,9 +17,11 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Case class level options for parsing.
-  *
-  * @param trim if true, strings are trimmed otherwise left unchanged
-  * @param debug if true, print debugging info to std otherwise nothing
-  */
+ * Case class level options for parsing.
+ *
+ * @param trim
+ *   if true, strings are trimmed otherwise left unchanged
+ * @param debug
+ *   if true, print debugging info to std otherwise nothing
+ */
 case class Options(trim: Boolean = false, debug: Boolean = false) extends StaticAnnotation

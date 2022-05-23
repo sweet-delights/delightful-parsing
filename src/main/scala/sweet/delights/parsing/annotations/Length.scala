@@ -17,8 +17,9 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies a fixed width for a field to be parsed.
-  *
-  * @param value fixed-width length in number of characters
-  */
+ * Specifies a fixed width for a field to be parsed.
+ *
+ * @param value
+ *   fixed-width length in number of characters
+ */
 case class Length(value: Int) extends StaticAnnotation

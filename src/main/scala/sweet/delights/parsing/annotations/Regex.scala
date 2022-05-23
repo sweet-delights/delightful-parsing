@@ -17,9 +17,9 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies a regex to parse a string, effectively making it
-  * variable-length.
-  *
-  * @param value a regular expression
-  */
+ * Specifies a regex to parse a string, effectively making it variable-length.
+ *
+ * @param value
+ *   a regular expression
+ */
 case class Regex(value: String) extends StaticAnnotation

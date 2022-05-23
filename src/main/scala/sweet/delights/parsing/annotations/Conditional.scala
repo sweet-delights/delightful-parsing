@@ -17,14 +17,13 @@ package sweet.delights.parsing.annotations
 import scala.annotation.StaticAnnotation
 
 /**
-  * Specifies a condition on a field to be parsed. This annotation is
-  * only taken into account for repeatable types. The function provided
-  * is given the occurence index, starting from 0, in which the field
-  * is being parsed. If the function applied on the index return true,
-  * then the field is parsed. Otherwise, the field is ignored.
-  *
-  * This annotation is an experiment and may be removed in the future.
-  *
-  * @param func a function on a index
-  */
+ * Specifies a condition on a field to be parsed. This annotation is only taken into account for repeatable types. The function provided is given the occurence
+ * index, starting from 0, in which the field is being parsed. If the function applied on the index return true, then the field is parsed. Otherwise, the field
+ * is ignored.
+ *
+ * This annotation is an experiment and may be removed in the future.
+ *
+ * @param func
+ *   a function on a index
+ */
 case class Conditional(func: Int => Boolean) extends StaticAnnotation
