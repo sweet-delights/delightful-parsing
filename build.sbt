@@ -32,9 +32,9 @@ libraryDependencies ++= {
       )
     case _ =>
       Seq(
-        "org.scala-lang"     % "scala-reflect"           % scalaVersion.value % Provided,
+        "org.scala-lang"      % "scala-reflect"          % scalaVersion.value % Provided,
         "org.sweet-delights" %% "delightful-typeclasses" % "0.2.0",
-        "org.specs2"         %% "specs2-core"            % "4.15.0" % "test"
+        "org.specs2"         %% "specs2-core"            % "4.15.0"           % "test"
       )
   }
 }
