@@ -1,7 +1,7 @@
 import java.util.regex.Pattern
 import sbt.Keys.scalacOptions
 
-lazy val scala2_12 = "2.12.15"
+lazy val scala2_12 = "2.12.17"
 lazy val scala2_13 = "2.13.8"
 lazy val scala3 = "3.1.2"
 
@@ -32,9 +32,9 @@ libraryDependencies ++= {
       )
     case _ =>
       Seq(
-        "org.scala-lang"     % "scala-reflect"           % scalaVersion.value % Provided,
+        "org.scala-lang"      % "scala-reflect"          % scalaVersion.value % Provided,
         "org.sweet-delights" %% "delightful-typeclasses" % "0.2.0",
-        "org.specs2"         %% "specs2-core"            % "4.15.0" % "test"
+        "org.specs2"         %% "specs2-core"            % "4.15.0"           % "test"
       )
   }
 }
