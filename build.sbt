@@ -1,7 +1,7 @@
 import java.util.regex.Pattern
 import sbt.Keys.scalacOptions
 
-lazy val scala2_12 = "2.12.15"
+lazy val scala2_12 = "2.12.17"
 lazy val scala2_13 = "2.13.10"
 lazy val scala3 = "3.1.2"
 
