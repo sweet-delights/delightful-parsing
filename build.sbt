@@ -26,7 +26,7 @@ libraryDependencies ++= {
   scalaBinaryVersion.value match {
     case "3" =>
       Seq(
-        "org.typelevel"      %% "shapeless3-deriving"    % "3.1.0",
+        "org.typelevel"      %% "shapeless3-deriving"    % "3.2.0",
         "org.sweet-delights" %% "delightful-typeclasses" % "0.2.0",
         "org.specs2"         %% "specs2-core"            % "4.16.1" % "test"
       )
