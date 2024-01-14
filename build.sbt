@@ -2,8 +2,8 @@ import java.util.regex.Pattern
 import sbt.Keys.scalacOptions
 
 lazy val scala2_12 = "2.12.18"
-lazy val scala2_13 = "2.13.11"
-lazy val scala3 = "3.3.0"
+lazy val scala2_13 = "2.13.12"
+lazy val scala3 = "3.3.1"
 
 name := "delightful-parsing"
 organization := "org.sweet-delights"
@@ -28,13 +28,13 @@ libraryDependencies ++= {
       Seq(
         "org.typelevel"      %% "shapeless3-deriving"    % "3.3.0",
         "org.sweet-delights" %% "delightful-typeclasses" % "0.2.0",
-        "org.specs2"         %% "specs2-core"            % "4.20.0" % "test"
+        "org.specs2"         %% "specs2-core"            % "4.20.3" % "test"
       )
     case _ =>
       Seq(
         "org.scala-lang"      % "scala-reflect"          % scalaVersion.value % Provided,
         "org.sweet-delights" %% "delightful-typeclasses" % "0.2.0",
-        "org.specs2"         %% "specs2-core"            % "4.20.0"           % "test"
+        "org.specs2"         %% "specs2-core"            % "4.20.3"           % "test"
       )
   }
 }
