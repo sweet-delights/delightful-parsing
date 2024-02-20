@@ -409,8 +409,7 @@ object Parser {
               .appendPattern(fmt)
               .toFormatter
           }
-        )
-        (parseSimpleType(parsed, ctx)(parseFormat(_, formatter)), next)
+        )(parseSimpleType(parsed, ctx)(parseFormat(_, formatter)), next)
 
       case None =>
         (parseSimpleType(parsed, ctx)(parse), next)
