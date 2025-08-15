@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/sweet-delights/delightful-parsing.svg?branch=master)](https://travis-ci.com/sweet-delights/delightful-parsing)
+[![Build Status](https://github.com/sweet-delights/delightful-parsing/actions/workflows/scala.yml/badge.svg)](https://github.com/sweet-delights/delightful-parsing/actions/workflows/scala.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/org.sweet-delights/delightful-parsing_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/org.sweet-delights/delightful-parsing_2.13)
 
 `delightful-parsing` is a library for parsing fixed-width columns from a string. It is highly inspired by the project
@@ -397,3 +397,4 @@ Parser.parse[Foo]("xxx")
 - the [`shapeless`](https://github.com/milessabin/shapeless) library
 - the [The Type Astronaut's Guide to Shapeless](https://underscore.io/books/shapeless-guide/) book
 - [StackOverflow](https://stackoverflow.com/questions/64688798/hlist-foldleft-with-tuple-as-zero)
+
